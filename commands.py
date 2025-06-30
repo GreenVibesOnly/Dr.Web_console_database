@@ -9,6 +9,18 @@
 from database import ConsoleDB
 
 
+def require_args(n):
+    """Декоратор: проверяет количество аргументов"""
+    def decorator(func):
+        def wrapper(*wrapper_args, **kwargs):
+            args = wrapper_args[1] if len(wrapper_args) > 1 else []
+            if len(args) != n:
+                raise TypeError()
+            return func(*wrapper_args, **kwargs)
+        return wrapper
+    return decorator
+
+
 class CommandProcessor:
     def __init__(self):
         self.db = ConsoleDB()
@@ -30,28 +42,32 @@ class CommandProcessor:
     def execute(self, cmd, args):
         cmd = cmd.upper()
         handler = self.commands.get(cmd)
+        # Проверка введенных пользователем команды и значения
         if handler:
-            handler(args)
+            try:
+                handler(args)
+            except TypeError:
+                print(f"ERROR: Invalid arguments for command {cmd}")
         else:
-            print("Unknown command:", cmd)
+            print(f"Unknown command: {cmd}")
 
+    @require_args(2)
     def _set(self, args):
-        if len(args) == 2:
-            self.db.set(*args)
+        self.db.set(args[0], args[1])
 
+    @require_args(1)
     def _get(self, args):
-        if args:
-            print(self.db.get(args[0]) or "NULL")
+        print(self.db.get(args[0]) or "NULL")
 
+    @require_args(1)
     def _unset(self, args):
-        if args:
-            self.db.unset(args[0])
+        self.db.unset(args[0])
 
+    @require_args(1)
     def _counts(self, args):
-        if args:
-            print(self.db.counts(args[0]))
+        print(self.db.counts(args[0]))
 
+    @require_args(1)
     def _find(self, args):
-        if args:
-            keys = self.db.find(args[0])
-            print(' '.join(keys) if keys else "NULL")
+        keys = self.db.find(args[0])
+        print(' '.join(keys) if keys else "NULL")

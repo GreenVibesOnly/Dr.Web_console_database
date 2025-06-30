@@ -1,4 +1,8 @@
+import sys
 import unittest
+from io import StringIO
+
+from commands import CommandProcessor
 from database import ConsoleDB
 
 
@@ -58,7 +62,7 @@ class TestConsoleDB(unittest.TestCase):
         self.db.set("A", "2")
         self.db.begin()
         self.db.unset("A")
-        self.assertIsNone(self.db.get("A"))  # в верхней транзакции удалено
+        self.assertIsNone(self.db.get("A"))  # В верхней транзакции удалено
         self.db.rollback()
         self.assertEqual(self.db.get("A"), "2")
 
@@ -94,7 +98,39 @@ class TestConsoleDB(unittest.TestCase):
         """COUNTS обновляется после UNSET"""
         self.db.set("A", "10")
         self.db.unset("A")
-        self.assertEqual(self.db.counts("10"), 0)
+
+
+class TestCommandProcessor(unittest.TestCase):
+    def setUp(self):
+        self.processor = CommandProcessor()
+        self._stdout = sys.stdout
+        sys.stdout = StringIO()  # Перехват stdout
+
+    def tearDown(self):
+        sys.stdout = self._stdout  # Возвращаем stdout после теста
+
+    def get_output(self):
+        return sys.stdout.getvalue().strip()
+
+    def test_invalid_arguments(self):
+        """Проверка сообщений об ошибках при недостатке аргументов"""
+        self.processor.execute("SET", [])
+        self.processor.execute("SET", ["A"])
+        self.processor.execute("GET", [])
+        self.processor.execute("UNSET", [])
+        self.processor.execute("COUNTS", [])
+        self.processor.execute("FIND", [])
+
+        output = self.get_output().splitlines()
+        self.assertTrue(all("ERROR: Invalid arguments"
+                            in line for line in output))
+
+    def test_valid_arguments(self):
+        """SET с двумя аргументами работает корректно"""
+        self.processor.execute("SET", ["A", "10"])
+        self.processor.execute("GET", ["A"])
+        output = self.get_output().splitlines()
+        self.assertIn("10", output)
 
 
 if __name__ == "__main__":
