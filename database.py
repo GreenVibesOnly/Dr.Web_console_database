@@ -108,12 +108,14 @@ class ConsoleDB:
 
         for k, v in top_db.items():
             prev = curr_db.get(k)
-            if prev:
+            if prev is not None:
                 curr_counts[prev] -= 1
             if v is not None:
                 curr_db[k] = v
                 curr_counts[v] += 1
             else:
-                curr_db.pop(k, None)
+                # Правка: явное сохранение значения None
+                # в следующем уровне транзакции
+                curr_db[k] = None
 
         return True
