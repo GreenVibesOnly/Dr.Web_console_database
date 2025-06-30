@@ -98,6 +98,7 @@ class TestConsoleDB(unittest.TestCase):
         """COUNTS обновляется после UNSET"""
         self.db.set("A", "10")
         self.db.unset("A")
+        self.assertEqual(self.db.counts("10"), 0)
 
 
 class TestCommandProcessor(unittest.TestCase):
